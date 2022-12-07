@@ -434,14 +434,14 @@ static int write_id_mapping(idmap_type_t map_type, pid_t pid, const char *buf, s
 {
 	__do_close int fd = -EBADF;
 	int ret;
-	char path[STRLITERALLEN("/proc") + INTTYPE_TO_STRLEN(pid_t) +
-		  STRLITERALLEN("/setgroups") + 1];
+#define PATH_SIZE (STRLITERALLEN("/proc") + INTTYPE_TO_STRLEN(pid_t) + STRLITERALLEN("/setgroups") + 1)
+	char path[PATH_SIZE];
 
 	if (geteuid() != 0 && map_type == ID_TYPE_GID) {
 		__do_close int setgroups_fd = -EBADF;
 
-		ret = snprintf(path, PATH_MAX, "/proc/%d/setgroups", pid);
-		if (ret < 0 || ret >= PATH_MAX)
+		ret = snprintf(path, PATH_SIZE, "/proc/%d/setgroups", pid);
+		if (ret < 0 || ret >= PATH_SIZE)
 			return -E2BIG;
 
 		setgroups_fd = open(path, O_WRONLY | O_CLOEXEC);
@@ -455,9 +455,10 @@ static int write_id_mapping(idmap_type_t map_type, pid_t pid, const char *buf, s
 		}
 	}
 
-	ret = snprintf(path, PATH_MAX, "/proc/%d/%cid_map", pid, map_type == ID_TYPE_UID ? 'u' : 'g');
-	if (ret < 0 || ret >= PATH_MAX)
+	ret = snprintf(path, PATH_SIZE, "/proc/%d/%cid_map", pid, map_type == ID_TYPE_UID ? 'u' : 'g');
+	if (ret < 0 || ret >= PATH_SIZE)
 		return -E2BIG;
+#undef PATH_SIZE
 
 	fd = open(path, O_WRONLY | O_CLOEXEC);
 	if (fd < 0)
